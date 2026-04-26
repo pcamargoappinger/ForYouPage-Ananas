@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -365,27 +366,29 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 const BASE = 'https://api.jsonbin.io/v3';
+const PUBLIC_BIN_ID = '69ee1121aaba8821973c6d31';
 let cfg = {
   title: 'Klassen-Feed',
   subtitle: 'Aktuelle Beiträge aus dem Unterricht',
   password: null,
   apiKey: null,
-  binId: null,
+  binId: PUBLIC_BIN_ID,
   loggedIn: false
 };
 
 function loadCfg() {
   try { const s = localStorage.getItem('kf_cfg2'); if (s) Object.assign(cfg, JSON.parse(s)); } catch(e){}
+  cfg.binId = PUBLIC_BIN_ID;
 }
 function saveCfg() {
-  const s = Object.assign({}, cfg, { loggedIn: false });
+  const s = Object.assign({}, cfg, { loggedIn: false, binId: PUBLIC_BIN_ID });
   localStorage.setItem('kf_cfg2', JSON.stringify(s));
 }
 
 async function binGet() {
-  const r = await fetch(`${BASE}/b/${cfg.binId}/latest`, {
-    headers: { 'X-Master-Key': cfg.apiKey, 'X-Bin-Meta': 'false' }
-  });
+  const headers = { 'X-Bin-Meta': 'false' };
+  if (cfg.apiKey) headers['X-Master-Key'] = cfg.apiKey;
+  const r = await fetch(`${BASE}/b/${PUBLIC_BIN_ID}/latest`, { headers });
   if (!r.ok) throw new Error('Fetch failed ' + r.status);
   return r.json();
 }
@@ -414,10 +417,12 @@ async function createBin(apiKey) {
 }
 
 loadCfg();
-if (!cfg.binId || !cfg.apiKey || !cfg.password) {
+updateNav();
+// Besucher sehen immer sofort den Feed
+// Setup-Wizard nur wenn noch kein Passwort gesetzt (erstes Einrichten)
+if (!cfg.password) {
   showPage('setup');
 } else {
-  updateNav();
   showPage('feed');
 }
 
@@ -486,7 +491,7 @@ async function deletePost(id) {
 
 // Cloudinary-Konfiguration
 const CLOUDINARY_CLOUD = 'dautxiuqg';
-const CLOUDINARY_PRESET = 'ananas_feed';
+const CLOUDINARY_PRESET = 'Ananas Feed';
 let uploadedImageUrl = null;
 
 async function handleImageUpload(input) {
